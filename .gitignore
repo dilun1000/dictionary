@@ -1,0 +1,5 @@
+/vendor
+/config/db.php
+/public/js
+/public/css
+/node_modules

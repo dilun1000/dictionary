@@ -1,0 +1,21 @@
+{
+    "name": "php-mvc-tailwind",
+    "version": "1.0.0",
+    "description": "PHP MVC project using Tailwind CSS v4 via CLI",
+    "scripts": {
+        "css:dev": "npx tailwindcss -i ./src/input.css -o ./public/css/app.css --watch",
+        "css:build": "npx tailwindcss -i ./src/input.css -o ./public/css/app.css --minify",
+        "js:dev": "npx esbuild ./src/js/home_scroll.js --bundle --outfile=./public/js/home_scroll.js --watch",
+        "js:build": "npx esbuild ./src/js/home_scroll.js --bundle --outfile=./public/js/home_scroll.js --minify",
+        "js:dev2": "npx esbuild ./src/js/home_update.js --bundle --outfile=./public/js/home_update.js --watch",
+        "js:build2": "npx esbuild ./src/js/home_update.js --bundle --outfile=./public/js/home_update.js --minify"
+    },
+    "devDependencies": {
+        "esbuild": "^0.25.8"
+    },
+    "dependencies": {
+        "@tailwindcss/cli": "^4.1.11",
+        "axios": "^1.11.0",
+        "tailwindcss": "^4.1.11"
+    }
+}
