@@ -208,58 +208,133 @@ class AppController extends Controller
         }
     }
 
-    
-
     public function store()
-    {
-        $input = json_decode(file_get_contents('php://input'), true);
+{
+    header('Content-Type: application/json; charset=utf-8');
 
-        $eng = trim($input['eng'] ?? '');
-        $rus = trim($input['rus'] ?? '');
+    $input = json_decode(file_get_contents('php://input'), true);
 
-        error_log("STORE called: eng='$eng', rus='$rus'");
+    $eng = trim($input['eng'] ?? '');
+    $rus = trim($input['rus'] ?? '');
 
-        if (!$eng || !$rus) {
-            header('Content-Type: application/json; charset=utf-8');   // 👈 add here
-            http_response_code(400);
-            echo json_encode(['error' => 'Both English and Russian words are required']);
-            exit;
-        }
+    if (!$eng || !$rus) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Both English and Russian words are required']);
+        return;
+    }
 
-        try {
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM dictionary WHERE eng = :eng AND rus = :rus");
-            $stmt->execute(['eng' => $eng, 'rus' => $rus]);
-
-            if ($stmt->fetchColumn() > 0) {
-                header('Content-Type: application/json; charset=utf-8');   // 👈 add here
-                http_response_code(409);
-                echo json_encode(['error' => 'These words are already stored']);
-                exit;
-            }
-
-            $stmt = $this->pdo->prepare("
+    try {
+        // Вставляем новое слово (если есть уникальный индекс – оно само отловит дубликат)
+        $stmt = $this->pdo->prepare("
             INSERT INTO dictionary (eng, rus, learnt, created_at, updated_at)
             VALUES (:eng, :rus, 0, NOW(), NOW())
         ");
-            $stmt->execute(['eng' => $eng, 'rus' => $rus]);
+        $stmt->execute(['eng' => $eng, 'rus' => $rus]);
 
-            $id = $this->pdo->lastInsertId();
+        $id = $this->pdo->lastInsertId();
 
-            header('Content-Type: application/json; charset=utf-8');   // 👈 add here
-            http_response_code(200);
-            echo json_encode(['data' => ['id' => $id, 'eng' => $eng, 'rus' => $rus]]);
-            exit;
-        } catch (PDOException $e) {
-            header('Content-Type: application/json; charset=utf-8');   // 👈 add here
+        // Получаем новое слово первым + ещё 14 следующих по алфавиту
+        $stmt = $this->pdo->prepare("
+            SELECT *
+            FROM dictionary
+            WHERE eng >= (SELECT eng FROM dictionary WHERE id = :id)
+            ORDER BY eng ASC
+            LIMIT 15
+        ");
+        $stmt->execute(['id' => $id]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        http_response_code(201);
+        echo json_encode(['success' => true, 'data' => $rows]);
+    } catch (PDOException $e) {
+        // Отдельная обработка ошибки дубликата
+        if ($e->getCode() == 23000) {
+            http_response_code(409);
+            echo json_encode(['error' => 'These words are already stored']);
+        } else {
             http_response_code(500);
-            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
-            error_log("Database error: " . $e->getMessage());
-            exit;
+            echo json_encode(['error' => 'Database error']);
         }
     }
+}
 
 
-    /* public function autocomplete()
+
+
+    // public function store()
+    // {
+    //     $input = json_decode(file_get_contents('php://input'), true);
+
+    //     $eng = trim($input['eng'] ?? '');
+    //     $rus = trim($input['rus'] ?? '');
+
+    //     error_log("STORE called: eng='$eng', rus='$rus'");
+
+    //     if (!$eng || !$rus) {
+    //         header('Content-Type: application/json; charset=utf-8');   // 👈 add here
+    //         http_response_code(400);
+    //         echo json_encode(['error' => 'Both English and Russian words are required']);
+    //         exit;
+    //     }
+
+    //     try {
+    //         $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM dictionary WHERE eng = :eng AND rus = :rus");
+    //         $stmt->execute(['eng' => $eng, 'rus' => $rus]);
+
+    //         if ($stmt->fetchColumn() > 0) {
+    //             header('Content-Type: application/json; charset=utf-8');   // 👈 add here
+    //             http_response_code(409);
+    //             echo json_encode(['error' => 'These words are already stored']);
+    //             exit;
+    //         }
+
+    //         $stmt = $this->pdo->prepare("
+    //         INSERT INTO dictionary (eng, rus, learnt, created_at, updated_at)
+    //         VALUES (:eng, :rus, 0, NOW(), NOW())
+    //     ");
+    //         $stmt->execute(['eng' => $eng, 'rus' => $rus]);
+
+    //         $id = $this->pdo->lastInsertId();
+
+    //         header('Content-Type: application/json; charset=utf-8');   // 👈 add here
+    //         http_response_code(200);
+    //         echo json_encode(['data' => ['id' => $id, 'eng' => $eng, 'rus' => $rus]]);
+    //         exit;
+
+            /* $stmt = $this->pdo->prepare("
+    INSERT INTO dictionary (eng, rus, learnt, created_at, updated_at)
+    VALUES (:eng, :rus, 0, NOW(), NOW())
+");
+$stmt->execute(['eng' => $eng, 'rus' => $rus]);
+
+$id = $this->pdo->lastInsertId();
+
+// 🔹 Fetch the new word first, then 14 other rows
+$stmt = $this->pdo->prepare("
+    SELECT *
+    FROM dictionary
+    ORDER BY (id = :id) DESC, created_at ASC
+    LIMIT 15
+");
+$stmt->execute(['id' => $id]);
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+header('Content-Type: application/json; charset=utf-8');
+http_response_code(200);
+echo json_encode(['data' => $rows]);
+exit; */
+
+    //     } catch (PDOException $e) {
+    //         header('Content-Type: application/json; charset=utf-8');   // 👈 add here
+    //         http_response_code(500);
+    //         echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    //         error_log("Database error: " . $e->getMessage());
+    //         exit;
+    //     }
+    // }
+
+
+    public function autocomplete()
     {
 
         // Simulate query parameters (?query=...&lang=...)
@@ -296,7 +371,7 @@ class AppController extends Controller
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(array_values($grouped), JSON_UNESCAPED_UNICODE);
 
-    } */
+    }
 
     public function chunk()
     {
@@ -362,3 +437,67 @@ class AppController extends Controller
     }
 
 }
+
+
+/* 
+store for output new pair
+public function store()
+{
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    $eng = trim($input['eng'] ?? '');
+    $rus = trim($input['rus'] ?? '');
+
+    error_log("STORE called: eng='$eng', rus='$rus'");
+
+    if (!$eng || !$rus) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(400);
+        echo json_encode(['error' => 'Both English and Russian words are required']);
+        exit;
+    }
+
+    try {
+        // Check if the pair already exists
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM dictionary WHERE eng = :eng AND rus = :rus");
+        $stmt->execute(['eng' => $eng, 'rus' => $rus]);
+
+        if ($stmt->fetchColumn() > 0) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(409);
+            echo json_encode(['error' => 'These words are already stored']);
+            exit;
+        }
+
+        // Insert new word
+        $stmt = $this->pdo->prepare("
+            INSERT INTO dictionary (eng, rus, learnt, created_at, updated_at)
+            VALUES (:eng, :rus, 0, NOW(), NOW())
+        ");
+        $stmt->execute(['eng' => $eng, 'rus' => $rus]);
+
+        $id = $this->pdo->lastInsertId();
+
+        // Fetch the new word first, then 14 other rows
+        $stmt = $this->pdo->prepare("
+            SELECT *
+            FROM dictionary
+            ORDER BY (id = :id) DESC, created_at ASC
+            LIMIT 15
+        ");
+        $stmt->execute(['id' => $id]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(200);
+        echo json_encode(['data' => $rows]);
+        exit;
+
+    } catch (PDOException $e) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        error_log("Database error: " . $e->getMessage());
+        exit;
+    }
+} */

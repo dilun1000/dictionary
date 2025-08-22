@@ -129,7 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchInitialScrollWords();
 });
 
-
 // Mark a word as learnt (API call)
 function markWordAsLearnt(id, learnt) {
     axios.patch(`/dictionary/${id}/learn`, { learnt }, {
@@ -144,8 +143,6 @@ function markWordAsLearnt(id, learnt) {
             alert('Could not update word.');
         });
 }
-
-
 
 function fetchInitialWords() {
 
@@ -182,8 +179,6 @@ function fetchInitialWords() {
         });
 }
 
-
-
 function fetchMoreWords(direction) {
     if (!initialLoaded || loading || !pivotId) {
         console.log("⛔ Skipped: initialLoaded=", initialLoaded, " loading=", loading, " pivotId=", pivotId);
@@ -209,7 +204,6 @@ function fetchMoreWords(direction) {
                 loading = false;
                 return;
             }
-
             
             if (direction === 'down') {
                 data.forEach(word => {
@@ -233,8 +227,6 @@ function fetchMoreWords(direction) {
         }).catch(console.error)
         .finally(() => loading = false);
 }
-
-
 
 // Scroll event handler with inverted logic for your use case
 scrollContainer.addEventListener('scroll', () => {
@@ -268,8 +260,6 @@ function fetchInitialScrollWords() {
     if (filterCheckbox && filterCheckbox.checked) {
         params.learntOnly = 1;
     }
-
-
     axios.get('/dictionary/initial', { params })
         .then(response => {
             const data = response.data.data || [];
@@ -353,3 +343,123 @@ filterInput.addEventListener('input', () => {
 });
 
 
+/* filterInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        query = filterInput.value.trim();
+        lang = detectLanguage(query);
+
+        if (!query) {
+            scrollContainer.dataset.mode = 'initial';
+            fetchInitialScrollWords(); // show default 20
+            return;
+        }
+
+        // 🔹 Autocomplete for dropdown
+        axios.get(`/dictionary/autocomplete?query=${query}&lang=${lang}`)
+            .then(res => showSuggestions(res.data))
+            .catch(console.error);
+
+        // 🔹 Filtered table request (FIXED)
+        scrollContainer.dataset.mode = 'filtered';
+        filterWords();   // ✅ use /dictionary/filter
+    }, 300);
+}); */
+
+
+//after store() in php
+/* function fetchInitialScrollWords(reset = true) {
+    if (query) return;
+
+    loading = true;
+    const params = {};
+    if (filterCheckbox?.checked) params.learntOnly = 1;
+
+    axios.get('/dictionary/initial', { params })
+      .then(response => {
+          const data = response.data.data || [];
+          if (reset) {
+              tableBody.innerHTML = '';
+              currentWords = [];
+          }
+          data.forEach(word => {
+              const row = createRow(word);
+              tableBody.appendChild(row);
+              currentWords.push(word);
+          });
+          pivotId = currentWords.at(-1)?.id || null;
+          initialLoaded = true;
+      })
+      .catch(console.error)
+      .finally(() => loading = false);
+} */
+
+let editingRowId = null;
+
+// 1. Handle edit icon click
+document.addEventListener('click', function (e) {
+    if (e.target.closest('.edit-icon')) {
+        const tr = e.target.closest('tr');
+        editingRowId = tr.dataset.id; // assuming you set tr.dataset.id = word.id when creating the row
+        document.getElementById('update-input').value = tr.querySelector('.td-eng').textContent.trim();
+        document.getElementById('update-input_2').value = tr.querySelector('.td-rus').textContent.trim();
+    }
+});
+
+
+document.getElementById('save-btn').addEventListener('click', function () {
+    const eng = document.getElementById('update-input').value.trim();
+    const rus = document.getElementById('update-input_2').value.trim();
+    const messageDiv = document.getElementById('save-message');
+    messageDiv.textContent = ''; // Clear previous message
+
+    if (!eng || !rus) {
+        messageDiv.textContent = 'Both fields are required.';
+        return;
+    }
+
+    if (editingRowId) {
+        axios.patch(`/dictionary/${editingRowId}`, { eng, rus })
+            .then(() => {
+                const tr = document.querySelector(`tr[data-id="${editingRowId}"]`);
+                if (tr) {
+                    tr.querySelector('.td-eng').textContent = eng;
+                    tr.querySelector('.td-rus').textContent = rus;
+                }
+                editingRowId = null;
+                document.getElementById('update-input').value = '';
+                document.getElementById('update-input_2').value = '';
+            })
+            .catch(() => {
+                messageDiv.textContent = 'Failed to update word.';
+            });
+    } else {
+
+        axios.post('/dictionary', { eng, rus })
+            .then(response => {
+                console.log('SUCCESS:', response);
+
+                // Clear input fields
+                document.getElementById('update-input').value = '';
+                document.getElementById('update-input_2').value = '';
+
+                // Перерисовываем таблицу словами из ответа store()
+                const data = response.data.data || [];
+                tableBody.innerHTML = '';
+                currentWords = [];
+
+
+                data.forEach(word => {
+                    const row = createRow(word);
+                    tableBody.appendChild(row);
+                    currentWords.push(word);
+                });
+                console.log(data);
+                pivotId = currentWords[currentWords.length - 1]?.id || null;
+                initialLoaded = true;
+            })
+            .catch(error => {
+                console.log('ERROR:', error.response ? error.response.data : error.message);
+            }); 
+    }
+});

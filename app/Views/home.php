@@ -104,6 +104,5 @@
 </main>
 
 <script type="module" src="/js/home_scroll.js" defer></script>
-<script type="module" src="/js/home_update.js" defer></script>
 </body>
 </html>
