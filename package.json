@@ -6,9 +6,7 @@
         "css:dev": "npx tailwindcss -i ./src/input.css -o ./public/css/app.css --watch",
         "css:build": "npx tailwindcss -i ./src/input.css -o ./public/css/app.css --minify",
         "js:dev": "npx esbuild ./src/js/home_scroll.js --bundle --outfile=./public/js/home_scroll.js --watch",
-        "js:build": "npx esbuild ./src/js/home_scroll.js --bundle --outfile=./public/js/home_scroll.js --minify",
-        "js:dev2": "npx esbuild ./src/js/home_update.js --bundle --outfile=./public/js/home_update.js --watch",
-        "js:build2": "npx esbuild ./src/js/home_update.js --bundle --outfile=./public/js/home_update.js --minify"
+        "js:build": "npx esbuild ./src/js/home_scroll.js --bundle --outfile=./public/js/home_scroll.js --minify"
     },
     "devDependencies": {
         "esbuild": "^0.25.8"
