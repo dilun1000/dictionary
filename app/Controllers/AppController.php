@@ -150,7 +150,7 @@ public function scroll()
 
     if ($direction === 'down') {
         $sql = "
-            SELECT id, eng, rus 
+            SELECT id, eng, rus , learnt
             FROM dictionary
             WHERE eng > :pivot " . ($learntOnly ? "AND (learnt = 1)" : "") . "
             ORDER BY eng ASC
@@ -158,7 +158,7 @@ public function scroll()
         ";
     } else {
         $sql = "
-            SELECT id, eng, rus 
+            SELECT id, eng, rus , learnt
             FROM (
                 SELECT id, eng, rus
                 FROM dictionary
@@ -353,12 +353,6 @@ public function scroll()
             }
         }
     }
-
-
-
-
-    
-
 
     public function autocomplete()
     {
