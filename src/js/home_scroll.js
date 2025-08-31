@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-
 const filterInput = document.getElementById('filter-input');
 const tableBody = document.getElementById('word-table-body');
 const scrollContainer = document.getElementById('scroll-container');
@@ -83,9 +82,7 @@ function createRow(word) {
     </svg>
     `;
 
-
     gapEdit.appendChild(editIcon);
-
 
     // Add hover effect for edit icon
     editIcon.addEventListener('mouseenter', () => {
@@ -134,7 +131,6 @@ filterCheckbox.addEventListener('change', () => {
     }
 });
 
-
 // Trigger initial dictionary load (when there's no input filter)
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM ready');
@@ -155,41 +151,6 @@ function markWordAsLearnt(id, learnt) {
             alert('Could not update word.');
         });
 }
-//LAST EFFECTIVE VERSION
-/* function fetchInitialWords() {
-
-    if (!query) {
-        scrollContainer.dataset.mode = 'initial';
-        fetchInitialScrollWords(); // reload initial words
-        return;
-    }
-
-    // If query exists, continue fetching filtered words
-    loading = true;
-    initialLoaded = false;
-    tableBody.innerHTML = '';
-    currentWords = [];
-
-    axios.get(`/dictionary/chunk?query=${query}&lang=${lang}&page=1`)
-        .then(response => {
-            const data = response.data.data || [];
-            tableBody.innerHTML = '';
-            currentWords = [];
-
-            if (data.length > 0) {
-                data.forEach(word => {
-                    const row = createRow(word);
-                    tableBody.appendChild(row);
-                    currentWords.push(word);
-                });
-                pivotId = currentWords[0].id; // or .eng depending on your backend
-                initialLoaded = true;
-            } else {
-                pivotId = null;
-                initialLoaded = false;
-            }
-        });
-} */
 
 function fetchInitialWords() {
     if (!query) {
@@ -235,9 +196,6 @@ function fetchInitialWords() {
         .finally(() => loading = false);
 }
 
-
-
-
 scrollContainer.addEventListener('scroll', () => {
     if (!initialLoaded || loading) return;
 
@@ -255,8 +213,6 @@ scrollContainer.addEventListener('scroll', () => {
 });
 
 // Listen for changes on the filter-checkbox
-
-
 function filterWords() {
     const query = filterInput.value.trim();
     const params = {};
@@ -283,7 +239,6 @@ function filterWords() {
         })
         .catch(console.error);
 }
-
 
 let debounceTimer = null;
 filterInput.addEventListener('input', () => {
@@ -320,7 +275,6 @@ document.addEventListener('click', function (e) {
         document.getElementById('update-input_2').value = tr.querySelector('.td-rus').textContent.trim();
     }
 });
-
 
 document.getElementById('save-btn').addEventListener('click', function () {
     const eng = document.getElementById('update-input').value.trim();
@@ -462,215 +416,3 @@ function fetchInitialScrollWords() {
         .catch(console.error)
         .finally(() => loading = false);
 }
-
-/* function fetchScrollWords(direction = 'down') {
-    if (loading) return;
-    loading = true;
-
-    const params = {
-        pivot: pivotId || 0,
-        direction,
-    };
-    if (filterCheckbox.checked) {
-        params.learntOnly = 1;
-    }
-
-    axios.get('/dictionary/scroll', { params })
-        .then(response => {
-            const data = response.data.data || [];
-            const ids = response.data.ids || [];
-
-            if (!data.length) return;
-
-            if (direction === 'down') {
-                // append words at bottom
-                data.forEach(word => {
-                    const row = createRow(word);
-                    tableBody.appendChild(row);
-                    currentWords.push(word);
-                });
-                pivotId = currentWords[currentWords.length - 1].id;
-
-                // update idAbcList
-                idAbcList = idAbcList.concat(ids);
-
-            } else {
-                // scroll up: use idAbcList to maintain order
-                data.reverse().forEach(word => {
-                    const row = createRow(word);
-                    tableBody.insertBefore(row, tableBody.firstChild);
-                    currentWords.unshift(word);
-                });
-                pivotId = currentWords[0].id;
-
-                // prepend ids to idAbcList
-                idAbcList = ids.concat(idAbcList);
-            }
-        })
-        .finally(() => loading = false);
-} */
-
-/* const CHUNK_SIZE = 15;
-
-function fetchScrollWords(direction = 'down') {
-    if (loading) return;
-    loading = true;
-
-    let params = {
-        direction,
-    };
-    if (filterCheckbox.checked) {
-        params.learntOnly = 1;
-    }
-
-    if (direction === 'down') {
-        // pivot = last visible word
-        params.pivot = currentWords[currentWords.length - 1]?.id || 0;
-
-    } else { // scrolling up
-        // Take last CHUNK_SIZE IDs from idAbcList to fetch previous words
-        const idsToFetch = idAbcList.slice(-CHUNK_SIZE);
-        if (!idsToFetch.length) {
-            loading = false;
-            return;
-        }
-
-        params.ids = idsToFetch.join(',');
-        // Cut them off from idAbcList so it shrinks
-        idAbcList = idAbcList.slice(0, -CHUNK_SIZE);
-    }
-
-    axios.get('/dictionary/scroll', { params })
-        .then(response => {
-            const data = response.data.data || [];
-            const ids = response.data.ids || [];
-
-            if (!data.length) return;
-
-            if (direction === 'down') {
-                // append words at bottom
-                data.forEach(word => {
-                    const row = createRow(word);
-                    tableBody.appendChild(row);
-                    currentWords.push(word);
-                });
-                pivotId = currentWords[currentWords.length - 1].id;
-                // append new ids to idAbcList
-                idAbcList = idAbcList.concat(ids);
-
-            } else { // scroll up
-                // prepend words at top
-                data.forEach(word => {
-                    const row = createRow(word);
-                    tableBody.insertBefore(row, tableBody.firstChild);
-                    currentWords.unshift(word);
-                });
-                pivotId = currentWords[0].id;
-                // prepend fetched ids (already removed from idAbcList earlier)
-                idAbcList = ids.concat(idAbcList);
-            }
-        })
-        .finally(() => loading = false);
-} */
-
-/* function fetchScrollWords(direction = 'down') {
-if (loading) return;
-loading = true;
-
-const params = {
-pivot: pivotId || 0,
-direction,
-};
-if (filterCheckbox.checked) {
-params.learntOnly = 1;
-}
-
-axios.get('/dictionary/scroll', { params })
-.then(response => {
-    const data = response.data.data || [];
-
-    if (!data.length) return; // no more words
-
-    if (direction === 'down') {
-        data.forEach(word => {
-            const row = createRow(word);
-            tableBody.appendChild(row);
-            currentWords.push(word);
-        });
-        pivotId = currentWords[currentWords.length - 1].id; // update pivot for next down
-    } else {
-        data.reverse().forEach(word => { // prepend for up
-            const row = createRow(word);
-            tableBody.insertBefore(row, tableBody.firstChild);
-            currentWords.unshift(word);
-        });
-        pivotId = currentWords[0].id; // update pivot for next up
-    }
-})
-.finally(() => loading = false);
-} */
-
-
-/* function fetchInitialScrollWords() {
-    if (query) return; // Don't run if query is active
-
-    loading = true;
-
-    const params = {};
-    if (filterCheckbox && filterCheckbox.checked) {
-        params.learntOnly = 1;
-    }
-
-    axios.get('/dictionary/initial', { params })
-        .then(response => {
-            const data = response.data.data || [];
-            const ids = response.data.ids || [];
-
-            tableBody.innerHTML = '';
-            currentWords = [];
-            idAbcList = []; // reset id_abc_list
-
-            data.forEach(word => {
-                const row = createRow(word);
-                tableBody.appendChild(row);
-                currentWords.push(word);
-            });
-
-            idAbcList = ids; // store ids in alphabetical order for client-side
-            pivotId = currentWords[currentWords.length - 1]?.id || null;
-            initialLoaded = true;
-        })
-        .catch(console.error)
-        .finally(() => loading = false);
- }*/
-
-/* function fetchInitialScrollWords() {
-if (query) return; // Don't run if query is active
-
-loading = true;
-
-// Send learntOnly param if checkbox is checked
-const params = {};
-if (filterCheckbox && filterCheckbox.checked) {
-params.learntOnly = 1;
-}
-axios.get('/dictionary/initial', { params })
-.then(response => {
-    const data = response.data.data || [];
-    tableBody.innerHTML = '';
-    currentWords = [];
-
-    data.forEach(word => {
-        const row = createRow(word);
-
-        tableBody.appendChild(row);
-
-        currentWords.push(word);
-    });
-
-    pivotId = currentWords[currentWords.length - 1]?.id || null;
-    initialLoaded = true;
-})
-.catch(console.error)
-.finally(() => loading = false);
-} */

@@ -1,6 +1,5 @@
 <?php
 
-
 class Router {
     private $routes = [];
 
@@ -44,15 +43,14 @@ class Router {
     }
 }
 
-
-
 $router = new Router();
 
-//Как пример
-
 $router->add('GET', '/', [App\Controllers\AppController::class, 'home']);
+
 $router->add('PATCH', '/dictionary/{id}/learn', [App\Controllers\AppController::class, 'markAsLearnt']);
+
 $router->add('GET','/dictionary/scroll', [App\Controllers\AppController::class, 'scroll']);
+
 $router->add('GET','/dictionary/initial', [App\Controllers\AppController::class, 'initial']);
 
 
@@ -66,6 +64,7 @@ $router->add('DELETE','/dictionary/{id}', [App\Controllers\AppController::class,
 
 
 $router->add('POST','/dictionary', [App\Controllers\AppController::class, 'store']);
+
 $router->add('PATCH','/dictionary/{id}', [App\Controllers\AppController::class, 'update']);
 
 

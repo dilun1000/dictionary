@@ -102,7 +102,6 @@
   </section>
 
 </main>
-
 <script type="module" src="/js/home_scroll.js" defer></script>
 </body>
 </html>
