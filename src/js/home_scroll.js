@@ -155,8 +155,8 @@ function markWordAsLearnt(id, learnt) {
             alert('Could not update word.');
         });
 }
-
-function fetchInitialWords() {
+//LAST EFFECTIVE VERSION
+/* function fetchInitialWords() {
 
     if (!query) {
         scrollContainer.dataset.mode = 'initial';
@@ -189,7 +189,53 @@ function fetchInitialWords() {
                 initialLoaded = false;
             }
         });
+} */
+
+function fetchInitialWords() {
+    if (!query) {
+        scrollContainer.dataset.mode = 'initial';
+        fetchInitialScrollWords(); // reload initial words
+        return;
+    }
+
+    loading = true;
+    initialLoaded = false;
+    tableBody.innerHTML = '';
+    currentWords = [];
+
+    // 👇 build params object instead of string concatenation
+    const params = {
+        query: query,
+        lang: lang,
+        page: 1
+    };
+    if (filterCheckbox.checked) {
+        params.learntOnly = 1; // ✅ add learntOnly if checkbox is ticked
+    }
+
+    axios.get('/dictionary/chunk', { params })
+        .then(response => {
+            const data = response.data.data || [];
+            tableBody.innerHTML = '';
+            currentWords = [];
+
+            if (data.length > 0) {
+                data.forEach(word => {
+                    const row = createRow(word);
+                    tableBody.appendChild(row);
+                    currentWords.push(word);
+                });
+                pivotId = currentWords[0].id;
+                initialLoaded = true;
+            } else {
+                pivotId = null;
+                initialLoaded = false;
+            }
+        })
+        .finally(() => loading = false);
 }
+
+
 
 
 scrollContainer.addEventListener('scroll', () => {
@@ -360,7 +406,7 @@ function fetchScrollWords(direction = 'down') {
         direction,
         learntOnly: filterCheckbox.checked ? 1 : 0
     };
-console.log(params);
+    console.log(params);
     axios.get('/dictionary/scroll', { params })
         .then(response => {
             const data = response.data.data || [];
@@ -383,71 +429,6 @@ console.log(params);
         .catch(err => console.error("Scroll fetch failed:", err))
         .finally(() => loading = false);
 }
-
-
-
-/* function fetchScrollWords(direction = 'down') {
-    if (loading) return;
-    loading = true;
-
-    let pivotEng = null;
-
-    if (direction === 'down') {
-        // bottommost word
-        if (currentWords.length > 0) {
-            pivotEng = currentWords[currentWords.length - 1].eng;
-        }
-    } else {
-        // up: topmost word
-        if (currentWords.length > 0) {
-            pivotEng = currentWords[0].eng;
-        }
-    }
-
-    if (!pivotEng) {
-        loading = false;
-        return;
-    }
-
-    const params = {
-        pivotEng,          // ✅ send word, not id
-        direction,
-    };
-    if (filterCheckbox.checked) {
-        params.learntOnly = 1;
-    }
-console.log(params);
-    axios.get('/dictionary/scroll', { params })
-        .then(
-            
-            response => {
-            const data = response.data.data || [];
-
-            if (!data.length) return;
-
-            if (direction === 'down') {
-                // append words at bottom
-                data.forEach(word => {
-                    const row = createRow(word);
-                    tableBody.appendChild(row);
-                    currentWords.push(word);
-                });
-
-            } else {
-                // prepend words at top (already ascending order)
-                data.forEach(word => {
-                    const row = createRow(word);
-                    tableBody.insertBefore(row, tableBody.firstChild);
-                    currentWords.unshift(word);
-                });
-            }
-        })
-        .catch(err => {
-            console.error("Scroll fetch failed:", err);
-        })
-        .finally(() => loading = false);
-} */
-
 
 function fetchInitialScrollWords() {
     if (query) return; // Don't run if query is active
