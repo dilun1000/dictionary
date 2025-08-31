@@ -14,6 +14,10 @@ let pivotId = null;
 let currentWords = [];
 let idAbcList = [];
 
+
+let pivotEngDown = null;
+let pivotEngUp = null;
+
 // Detect language of input text
 function detectLanguage(text) {
     return /[а-яА-ЯЁё]/.test(text) ? 'rus' : 'eng';
@@ -276,7 +280,7 @@ document.addEventListener('click', function (e) {
     }
 });
 
-document.getElementById('save-btn').addEventListener('click', function () {
+/* document.getElementById('save-btn').addEventListener('click', function () {
     const eng = document.getElementById('update-input').value.trim();
     const rus = document.getElementById('update-input_2').value.trim();
     const messageDiv = document.getElementById('save-message');
@@ -327,13 +331,63 @@ document.getElementById('save-btn').addEventListener('click', function () {
                 pivotId = currentWords[currentWords.length - 1]?.id || null;
                 initialLoaded = true;
             })
+            
             .catch(error => {
                 console.log('ERROR:', error.response ? error.response.data : error.message);
             }); 
     }
+}); */
+document.getElementById('save-btn').addEventListener('click', function () {
+    const eng = document.getElementById('update-input').value.trim();
+    const rus = document.getElementById('update-input_2').value.trim();
+    const messageDiv = document.getElementById('save-message');
+    messageDiv.textContent = '';
+
+    if (!eng || !rus) {
+        messageDiv.textContent = 'Both fields are required.';
+        return;
+    }
+
+    if (editingRowId) {
+        // PATCH existing word
+        axios.patch(`/dictionary/${editingRowId}`, { eng, rus })
+            .then(() => {
+                const tr = document.querySelector(`tr[data-id="${editingRowId}"]`);
+                if (tr) {
+                    tr.querySelector('.td-eng').textContent = eng;
+                    tr.querySelector('.td-rus').textContent = rus;
+                }
+                editingRowId = null;
+                document.getElementById('update-input').value = '';
+                document.getElementById('update-input_2').value = '';
+            })
+            .catch(() => messageDiv.textContent = 'Failed to update word.');
+    } else {
+        // POST new word
+        axios.post('/dictionary', { eng, rus })
+            .then(response => {
+                const newWord = response.data.data[0]; // assume API returns saved word
+
+                // Add the new word at the top
+                const row = createRow(newWord);
+                tableBody.insertBefore(row, tableBody.firstChild);
+                currentWords.unshift(newWord);
+
+                // Update scroll pivots
+                pivotEngUp = currentWords[0].eng;
+                if (!pivotEngDown) pivotEngDown = currentWords[currentWords.length - 1].eng;
+
+                // Clear inputs
+                document.getElementById('update-input').value = '';
+                document.getElementById('update-input_2').value = '';
+            })
+            .catch(error => {
+                console.error('Failed to save word:', error.response?.data || error.message);
+            });
+    }
 });
 
-function fetchScrollWords(direction = 'down') {
+/* function fetchScrollWords(direction = 'down') {
     if (loading) return;
     loading = true;
 
@@ -382,8 +436,63 @@ function fetchScrollWords(direction = 'down') {
         })
         .catch(err => console.error("Scroll fetch failed:", err))
         .finally(() => loading = false);
-}
+} */
 
+/* function fetchScrollWords(direction = 'down') {
+    if (loading) return;
+    loading = true;
+
+    let pivotEng = direction === 'down' ? pivotEngDown : pivotEngUp;
+
+    // If pivot is null, fallback to currentWords or table rows
+    if (!pivotEng) {
+        if (currentWords.length) {
+            pivotEng = direction === 'down'
+                ? currentWords[currentWords.length - 1].eng
+                : currentWords[0].eng;
+        } else {
+            const rows = tableBody.querySelectorAll('tr');
+            if (!rows.length) {
+                loading = false;
+                return;
+            }
+            pivotEng = direction === 'down'
+                ? rows[rows.length - 1].querySelector('.td-eng').textContent
+                : rows[0].querySelector('.td-eng').textContent;
+        }
+    }
+
+    const params = {
+        pivot: pivotEng,
+        direction,
+        learntOnly: filterCheckbox.checked ? 1 : 0
+    };
+
+    axios.get('/dictionary/scroll', { params })
+        .then(response => {
+            const data = response.data.data || [];
+            if (!data.length) return;
+
+            if (direction === 'down') {
+                data.forEach(word => {
+                    const row = createRow(word);
+                    tableBody.appendChild(row);
+                    currentWords.push(word);
+                });
+                pivotEngDown = currentWords[currentWords.length - 1].eng; // update down pivot
+            } else {
+                data.reverse().forEach(word => {
+                    const row = createRow(word);
+                    tableBody.insertBefore(row, tableBody.firstChild);
+                    currentWords.unshift(word);
+                });
+                pivotEngUp = currentWords[0].eng; // update up pivot
+            }
+        })
+        .catch(err => console.error("Scroll fetch failed:", err))
+        .finally(() => loading = false);
+}
+         */
 function fetchInitialScrollWords() {
     if (query) return; // Don't run if query is active
 
@@ -414,5 +523,59 @@ function fetchInitialScrollWords() {
 
         })
         .catch(console.error)
+        .finally(() => loading = false);
+}
+
+function fetchScrollWords(direction = 'down') {
+    if (loading) return;
+    loading = true;
+
+    let pivotEng = direction === 'down' ? pivotEngDown : pivotEngUp;
+
+    if (!pivotEng) {
+        if (currentWords.length) {
+            pivotEng = direction === 'down'
+                ? currentWords[currentWords.length - 1].eng
+                : currentWords[0].eng;
+        } else {
+            const rows = tableBody.querySelectorAll('tr');
+            if (!rows.length) {
+                loading = false;
+                return;
+            }
+            pivotEng = direction === 'down'
+                ? rows[rows.length - 1].querySelector('.td-eng').textContent
+                : rows[0].querySelector('.td-eng').textContent;
+        }
+    }
+
+    const params = {
+        pivot: pivotEng,
+        direction,
+        learntOnly: filterCheckbox.checked ? 1 : 0
+    };
+
+    axios.get('/dictionary/scroll', { params })
+        .then(response => {
+            const data = response.data.data || [];
+            if (!data.length) return;
+
+            if (direction === 'down') {
+                data.forEach(word => {
+                    const row = createRow(word);
+                    tableBody.appendChild(row);
+                    currentWords.push(word);
+                });
+                pivotEngDown = currentWords[currentWords.length - 1].eng;
+            } else {
+                data.reverse().forEach(word => {
+                    const row = createRow(word);
+                    tableBody.insertBefore(row, tableBody.firstChild);
+                    currentWords.unshift(word);
+                });
+                pivotEngUp = currentWords[0].eng;
+            }
+        })
+        .catch(err => console.error("Scroll fetch failed:", err))
         .finally(() => loading = false);
 }
