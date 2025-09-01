@@ -365,7 +365,7 @@ document.getElementById('save-btn').addEventListener('click', function () {
     } else {
         // POST new word
         axios.post('/dictionary', { eng, rus })
-            .then(response => {
+                        .then(response => {
                 const newWord = response.data.data[0]; // assume API returns saved word
 
                 // Add the new word at the top
@@ -514,11 +514,11 @@ function fetchInitialScrollWords() {
                 tableBody.appendChild(row);
                 currentWords.push(word);
             });
-
             pivotId = currentWords[currentWords.length - 1]?.id || null;
             initialLoaded = true;
 
             // 🔹 Initialize idAbcList with initial words
+            //ПОКА ЧТО НЕ НАЙДЕНО ГДЕ ПРИМЕНЯЕТСЯ
             idAbcList = currentWords.map(w => w.id);
 
         })
